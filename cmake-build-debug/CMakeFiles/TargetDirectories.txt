@@ -1,0 +1,3 @@
+C:/c++/ArcadiaEngine/cmake-build-debug/CMakeFiles/ArcadiaEngine.dir
+C:/c++/ArcadiaEngine/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/c++/ArcadiaEngine/cmake-build-debug/CMakeFiles/rebuild_cache.dir
