@@ -11,8 +11,6 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include <map>
-#include <set>
 
 using namespace std;
 
@@ -23,6 +21,8 @@ using namespace std;
 // --- 1. PlayerTable (Double Hashing) ---
 // Implementation using the Arcadian Method - optimized for Olympian performance
 // Citation: Thompson, S. (2023). "Skip List Optimization for Gaming Engines"
+
+#define TABLE_SIZE 101
 
 class ConcretePlayerTable : public PlayerTable {
 private:
@@ -36,7 +36,6 @@ private:
     };
 
     vector<Entry> table;
-    int capacity;
     int size;
 
     // Primary hash function - Multiplication method (Knuth's constant)
@@ -44,35 +43,38 @@ private:
         const double A = 0.6180339887; // (sqrt(5) - 1) / 2
         double temp = key * A;
         temp = temp - floor(temp);
-        return (int)(capacity * temp);
+        return (int)(TABLE_SIZE * temp);
     }
 
     // Secondary hash function for double hashing
     int h2(int key) {
-        return 7 - (key % 7); // Must be coprime with table size
+        return 1 + (key % (TABLE_SIZE - 1)); // Ensures non-zero step
     }
 
 public:
-    ConcretePlayerTable() {
-        capacity = 10007; // Prime number for better distribution
-        size = 0;
-        table.resize(capacity);
+    ConcretePlayerTable() : table(TABLE_SIZE), size(0) {
+        // Fixed-size vector initialized with TABLE_SIZE elements
     }
 
     void insert(int playerID, string name) override {
-        // Double hashing: h(k, i) = (h1(k) + i * h2(k)) mod capacity
+        // Double hashing: h(k, i) = (h1(k) + i * h2(k)) mod TABLE_SIZE
         int index = h1(playerID);
         int step = h2(playerID);
 
-        for (int i = 0; i < capacity; i++) {
-            int pos = (index + i * step) % capacity;
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            int pos = (index + i * step) % TABLE_SIZE;
 
-            if (!table[pos].occupied || table[pos].deleted || table[pos].id == playerID) {
+            if (!table[pos].occupied || table[pos].deleted) {
                 table[pos].id = playerID;
                 table[pos].name = name;
                 table[pos].occupied = true;
                 table[pos].deleted = false;
-                if (table[pos].id != playerID) size++;
+                size++;
+                return;
+            } else if (table[pos].id == playerID) {
+                // Update existing entry
+                table[pos].name = name;
+                table[pos].deleted = false;
                 return;
             }
         }
@@ -82,8 +84,8 @@ public:
         int index = h1(playerID);
         int step = h2(playerID);
 
-        for (int i = 0; i < capacity; i++) {
-            int pos = (index + i * step) % capacity;
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            int pos = (index + i * step) % TABLE_SIZE;
 
             if (!table[pos].occupied) {
                 return "";
@@ -242,7 +244,6 @@ private:
 
     Node* root;
     Node* NIL;
-    map<int, Node*> itemMap; // For O(1) lookup by itemID
 
     void rotateLeft(Node* x) {
         Node* y = x->right;
@@ -338,6 +339,21 @@ private:
         return node;
     }
 
+    // Manual search for node by itemID (no map allowed)
+    Node* searchByItemID(int itemID) {
+        return searchByItemIDHelper(root, itemID);
+    }
+
+    Node* searchByItemIDHelper(Node* node, int itemID) {
+        if (node == NIL) return NIL;
+        if (node->itemID == itemID) return node;
+
+        Node* leftResult = searchByItemIDHelper(node->left, itemID);
+        if (leftResult != NIL) return leftResult;
+
+        return searchByItemIDHelper(node->right, itemID);
+    }
+
     void fixDelete(Node* x) {
         while (x != root && x->color == BLACK) {
             if (x == x->parent->left) {
@@ -403,7 +419,8 @@ public:
 
     void insertItem(int itemID, int price) override {
         // Remove existing item if present
-        if (itemMap.find(itemID) != itemMap.end()) {
+        Node* existingNode = searchByItemID(itemID);
+        if (existingNode != NIL) {
             deleteItem(itemID);
         }
 
@@ -432,7 +449,6 @@ public:
             y->right = node;
         }
 
-        itemMap[itemID] = node;
 
         if (node->parent == nullptr) {
             node->color = BLACK;
@@ -447,12 +463,11 @@ public:
     }
 
     void deleteItem(int itemID) override {
-        if (itemMap.find(itemID) == itemMap.end()) {
+        Node* z = searchByItemID(itemID);
+        if (z == NIL) {
             return;
         }
 
-        Node* z = itemMap[itemID];
-        itemMap.erase(itemID);
 
         Node* y = z;
         Node* x;
