@@ -655,11 +655,42 @@ string WorldNavigator::sumMinDistancesBinary(int n, vector<vector<int>>& roads) 
 // =========================================================
 
 int ServerKernel::minIntervals(vector<char>& tasks, int n) {
-    // TODO: Implement task scheduler with cooling time
-    // Same task must wait 'n' intervals before running again
-    // Return minimum total intervals needed (including idle time)
-    // Hint: Use greedy approach with frequency counting
-    return 0;
+    if (n == 0) return (int)tasks.size();
+    if (tasks.empty()) return 0;
+    int freq[26] = {0};
+
+    for (char c : tasks) {
+        freq[c - 'A']++;
+    }
+
+    priority_queue<int> pq;
+    for (int i = 0; i < 26; i++) {
+        if (freq[i] > 0) 
+            pq.push(freq[i]);
+    }
+
+    queue<pair<int, int>> cooldown;
+    int mininterval = 0;
+    while (!pq.empty() || !cooldown.empty()) {
+        // Removing tasks whose cooldown has finished
+        while (!cooldown.empty() && cooldown.front().first <= mininterval) {
+            pq.push(cooldown.front().second);
+            cooldown.pop();
+        }
+        // Run the best available task, if any
+        if (!pq.empty()) {
+            int count = pq.top();
+            pq.pop();
+            count--;
+
+            // If it still has more executions, put into cooldown
+            if (count > 0) {
+                cooldown.push({mininterval + n + 1, count});
+            }
+        }
+        mininterval++;
+    }
+    return mininterval;
 }
 
 // =========================================================
