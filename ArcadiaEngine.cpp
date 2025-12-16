@@ -78,6 +78,9 @@ public:
                 return;
             }
         }
+
+        // All slots probed, table is full
+        cout << "Table is Full" << endl;
     }
 
     string search(int playerID) override {
@@ -149,10 +152,11 @@ public:
         vector<Node*> update(maxLevel + 1);
         Node* current = header;
 
-        // Find position (descending order - higher scores first)
+        // Find position (descending by score, ascending by ID for ties)
         for (int i = currentLevel; i >= 0; i--) {
             while (current->forward[i] != nullptr &&
-                   current->forward[i]->score > score) {
+                   (current->forward[i]->score > score ||
+                    (current->forward[i]->score == score && current->forward[i]->playerID < playerID))) {
                 current = current->forward[i];
             }
             update[i] = current;
@@ -163,6 +167,8 @@ public:
         // Update if player exists
         if (current != nullptr && current->playerID == playerID) {
             removePlayer(playerID);
+            addScore(playerID, score);
+            return;
         }
 
         // Insert new node
@@ -188,8 +194,11 @@ public:
         // Find the node to delete
         for (int i = currentLevel; i >= 0; i--) {
             while (current->forward[i] != nullptr &&
-                   current->forward[i]->playerID != playerID &&
-                   current->forward[i]->score >= 0) {
+                   (current->forward[i]->score > 0 ||
+                    (current->forward[i]->score == 0 && current->forward[i]->playerID < playerID))) {
+                if (current->forward[i]->playerID == playerID) {
+                    break;
+                }
                 current = current->forward[i];
             }
             update[i] = current;
@@ -418,12 +427,7 @@ public:
     }
 
     void insertItem(int itemID, int price) override {
-        // Remove existing item if present
-        Node* existingNode = searchByItemID(itemID);
-        if (existingNode != NIL) {
-            deleteItem(itemID);
-        }
-
+        // Allow duplicates - use composite key (price, itemID)
         Node* node = new Node(itemID, price);
         node->left = NIL;
         node->right = NIL;
@@ -431,9 +435,11 @@ public:
         Node* y = nullptr;
         Node* x = root;
 
+        // Composite key comparison: primary by price, secondary by itemID
         while (x != NIL) {
             y = x;
-            if (node->price < x->price) {
+            if (node->price < x->price ||
+                (node->price == x->price && node->itemID < x->itemID)) {
                 x = x->left;
             } else {
                 x = x->right;
@@ -443,7 +449,8 @@ public:
         node->parent = y;
         if (y == nullptr) {
             root = node;
-        } else if (node->price < y->price) {
+        } else if (node->price < y->price ||
+                   (node->price == y->price && node->itemID < y->itemID)) {
             y->left = node;
         } else {
             y->right = node;
