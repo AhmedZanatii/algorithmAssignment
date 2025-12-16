@@ -700,11 +700,63 @@ long long WorldNavigator::minBribeCost(int n, int m, long long goldRate, long lo
 }
 
 string WorldNavigator::sumMinDistancesBinary(int n, vector<vector<int>>& roads) {
-    // TODO: Implement All-Pairs Shortest Path (Floyd-Warshall)
-    // Sum all shortest distances between unique pairs (i < j)
-    // Return the sum as a binary string
-    // Hint: Handle large numbers carefully
-    return "0";
+    // Use reduced INF to avoid overflow during addition
+    const long long INF = LLONG_MAX / 4;
+
+    // Distance matrix
+    vector<vector<long long>> dist(n, vector<long long>(n, INF));
+
+    // city to itselft distance is 0
+    for (int i = 0; i < n; i++) {
+        dist[i][i] = 0;
+    }
+
+    // set given roads in distance matrix (undirected)
+    for (const auto& r : roads) {
+        int c1 = r[0];
+        int c2 = r[1];
+        int d = r[2];
+        // for duplicate roads select minimum
+        dist[c1][c2] = min(dist[c1][c2], (long long)d);
+        dist[c2][c1] = min(dist[c2][c1], (long long)d);
+        // if no duplicate roads
+        // dist[c1][c2] = (long long)d;
+        // dist[c2][c1] = (long long)d;
+    }
+    
+    // Floyd-Warshall
+    for (int k = 0; k < n; k++) {
+        for (int i = 0; i < n; i++) {
+            if (dist[i][k] == INF) continue;
+            for (int j = 0; j < n; j++) {
+                if (dist[k][j] == INF) continue;
+                if (dist[i][j] > dist[i][k] + dist[k][j]) {
+                    dist[i][j] = dist[i][k] + dist[k][j];
+                }
+            }
+        }
+    }
+
+    // Sum distances for unique pairs (i < j)
+    long long sum = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if (dist[i][j] != INF) {
+                sum += dist[i][j];
+            }
+        }
+    }
+
+    // Convert sum to binary string
+    if (sum == 0) return "0";
+
+    string binary;
+    while (sum > 0) {
+        binary = char('0' + (sum & 1)) + binary;
+        sum >>= 1;
+    }
+
+    return binary;
 }
 
 // =========================================================
