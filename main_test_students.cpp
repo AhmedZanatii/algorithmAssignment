@@ -9,7 +9,8 @@
 #include <string>
 #include <iomanip>
 #include <functional>
-#include "ArcadiaEngine.h" 
+#include "ArcadiaEngine.h"
+#include "ArcadiaEngine.cpp"
 
 using namespace std;
 

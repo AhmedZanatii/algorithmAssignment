@@ -149,6 +149,18 @@ public:
     }
 
     void addScore(int playerID, int score) override {
+        // First check if player already exists anywhere (O(N) scan allowed)
+        Node* existing = header->forward[0];
+        while (existing != nullptr) {
+            if (existing->playerID == playerID) {
+                // Player exists, remove old entry first
+                removePlayer(playerID);
+                break;
+            }
+            existing = existing->forward[0];
+        }
+
+        // Now insert the player with new score
         vector<Node*> update(maxLevel + 1);
         Node* current = header;
 
@@ -162,14 +174,6 @@ public:
             update[i] = current;
         }
 
-        current = current->forward[0];
-
-        // Update if player exists
-        if (current != nullptr && current->playerID == playerID) {
-            removePlayer(playerID);
-            addScore(playerID, score);
-            return;
-        }
 
         // Insert new node
         int lvl = randomLevel();
@@ -188,35 +192,41 @@ public:
     }
 
     void removePlayer(int playerID) override {
-        vector<Node*> update(maxLevel + 1);
-        Node* current = header;
+        // First, do a linear scan at level 0 to find the node (allowed O(N) operation)
+        Node* target = header->forward[0];
+        while (target != nullptr && target->playerID != playerID) {
+            target = target->forward[0];
+        }
+        if (target == nullptr) return; // Not found
 
-        // Find the node to delete
+        // Build update array: find predecessors at each level for 'target'
+        vector<Node*> update(maxLevel + 1);
         for (int i = currentLevel; i >= 0; i--) {
-            while (current->forward[i] != nullptr &&
-                   (current->forward[i]->score > 0 ||
-                    (current->forward[i]->score == 0 && current->forward[i]->playerID < playerID))) {
-                if (current->forward[i]->playerID == playerID) {
+            Node* current = header;
+            while (current->forward[i] != nullptr && current->forward[i] != target) {
+                // Navigate to the node just before target
+                if (current->forward[i]->score > target->score ||
+                    (current->forward[i]->score == target->score && current->forward[i]->playerID < target->playerID)) {
+                    current = current->forward[i];
+                } else {
                     break;
                 }
-                current = current->forward[i];
             }
             update[i] = current;
         }
 
-        current = current->forward[0];
-
-        if (current != nullptr && current->playerID == playerID) {
-            for (int i = 0; i <= currentLevel; i++) {
-                if (update[i]->forward[i] != current) break;
-                update[i]->forward[i] = current->forward[i];
+        // Unlink target at all levels
+        for (int i = 0; i <= currentLevel; i++) {
+            if (update[i]->forward[i] == target) {
+                update[i]->forward[i] = target->forward[i];
             }
-            delete current;
+        }
 
-            // Update current level
-            while (currentLevel > 0 && header->forward[currentLevel] == nullptr) {
-                currentLevel--;
-            }
+        delete target;
+
+        // Adjust current level if necessary
+        while (currentLevel > 0 && header->forward[currentLevel] == nullptr) {
+            currentLevel--;
         }
     }
 
