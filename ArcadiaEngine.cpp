@@ -38,17 +38,14 @@ private:
     vector<Entry> table;
     int size;
 
-    // Primary hash function - Multiplication method (Knuth's constant)
+    // Primary hash function - Division method
     int h1(int key) {
-        const double A = 0.6180339887; // (sqrt(5) - 1) / 2
-        double temp = key * A;
-        temp = temp - floor(temp);
-        return (int)(TABLE_SIZE * temp);
+        return key % TABLE_SIZE;
     }
 
     // Secondary hash function for double hashing
     int h2(int key) {
-        return 1 + (key % (TABLE_SIZE - 1)); // Ensures non-zero step
+        return (TABLE_SIZE - 1) - (key % (TABLE_SIZE - 1));
     }
 
 public:
