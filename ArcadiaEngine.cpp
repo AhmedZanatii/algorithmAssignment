@@ -147,7 +147,7 @@ public:
 
     void addScore(int playerID, int score) override {
         // First check if player already exists anywhere (O(N) scan allowed)
-        Node* existing = header->forward[0];
+     Node* existing = header->forward[0];
         while (existing != nullptr) {
             if (existing->playerID == playerID) {
                 // Player exists, remove old entry first
@@ -204,6 +204,7 @@ public:
                 // Navigate to the node just before target
                 if (current->forward[i]->score > target->score ||
                     (current->forward[i]->score == target->score && current->forward[i]->playerID < target->playerID)) {
+                    // checking by score but if the score equal compare by id
                     current = current->forward[i];
                 } else {
                     break;
@@ -585,14 +586,17 @@ int InventorySystem::maximizeCarryValue(int capacity, vector<pair<int, int>>& it
 }
 
 long long InventorySystem::countStringPossibilities(string s) {
-    // String decoding DP
-    // Rules: "uu" can be decoded as "w" or "uu"
-    //        "nn" can be decoded as "m" or "nn"
-    // Count total possible decodings modulo 10^9 + 7
-
     const long long MOD = 1000000007;
     int n = s.length();
 
+    // Check for invalid input
+    for (char c : s) {
+        if (c == 'w' || c == 'm') {
+            return 0; // Impossible for broken keyboard
+        }
+    }
+
+    // Handle empty input
     if (n == 0) return 1;
 
     // dp[i] = number of ways to decode s[0..i-1]
