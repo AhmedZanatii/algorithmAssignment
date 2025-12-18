@@ -598,6 +598,12 @@ long long InventorySystem::countStringPossibilities(string s) {
 
     if (n == 0) return 1;
 
+    for (char c : s) {
+        if (c == 'w' || c == 'm') {
+            return 0;  // Invalid characters
+        }
+    }
+
     // dp[i] = number of ways to decode s[0..i-1]
     vector<long long> dp(n + 1, 0);
     dp[0] = 1; // Empty string has one way
@@ -678,7 +684,7 @@ long long WorldNavigator::minBribeCost(int n, int m, long long goldRate, long lo
     
     pq.push({0, 0});
     
-    while (!pq.empty()) {
+    while (!pq.empty()) {  // m log n
         auto [cost, u] = pq.top();
         pq.pop();
         
