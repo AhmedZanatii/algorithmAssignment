@@ -650,67 +650,54 @@ bool WorldNavigator::pathExists(int n, vector<vector<int>>& edges, int source, i
 
 long long WorldNavigator::minBribeCost(int n, int m, long long goldRate, long long silverRate,
                                        vector<vector<int>>& roadData) {
-  vector<vector<long long>> graph(n, vector<long long>(n, 0));
-  
-  for (const auto& road : roadData) {
-      int u = road[0];
-      int v = road[1];
-      int goldCost = road[2];
-      int silverCost = road[3];
-      
-      long long totalCost = (long long)goldCost * goldRate + 
-                            (long long)silverCost * silverRate;
-      
-      graph[u][v] = totalCost;
-      graph[v][u] = totalCost;
-  }
-  
-  vector<long long> minWeight(n, LLONG_MAX);  // Minimum weight to connect each node
-  vector<bool> visited(n, false);             // Track visited nodes
-  
-  minWeight[0] = 0;  // Start from node 0
-  long long totalCost = 0;
-  int edgesAdded = 0;
-  
-  for (int i = 0; i < n; i++) {
-      // Find the unvisited node with minimum weight
-      // only adjacent nodes are considered cause they have minimum weights
-      int currentNode = -1;
-      long long minCost = LLONG_MAX;
-
-      for (int j = 0; j < n; j++) {
-          if (!visited[j] && minWeight[j] < minCost) {
-              minCost = minWeight[j];
-              currentNode = j;
-          }
-      }
-
-      if (currentNode == -1) {
-          return -1;
-      }
-
-      if (minWeight[currentNode] == LLONG_MAX) {
-          return -1;
-      }
-
-      visited[currentNode] = true;
-      totalCost += minWeight[currentNode];
-      edgesAdded++;
-
-      // Update minimum weights for adjacent nodes
-      for (int j = 0; j < n; j++) {
-          if (graph[currentNode][j] != 0 && !visited[j]) {
-              minWeight[j] = min(minWeight[j], graph[currentNode][j]);
-          }
-      }
-  }
-
-  // Check if all nodes are connected
-  if (edgesAdded != n) {
-      return -1;
-  }
-
-  return totalCost;
+    vector<vector<pair<int, long long>>> graph(n);
+    
+    for (const auto& road : roadData) {
+        int u = road[0];
+        int v = road[1];
+        int goldCost = road[2];
+        int silverCost = road[3];
+        
+        long long totalCost = (long long)goldCost * goldRate + 
+                              (long long)silverCost * silverRate;
+        
+        graph[u].push_back({v, totalCost});
+        graph[v].push_back({u, totalCost});
+    }
+    
+    priority_queue<pair<long long, int>, 
+                   vector<pair<long long, int>>, 
+                   greater<pair<long long, int>>> pq; // {cost, node}
+    
+    vector<bool> visited(n, false);
+    long long totalCost = 0;
+    int edgesAdded = 0;
+    
+    pq.push({0, 0});
+    
+    while (!pq.empty()) {
+        auto [cost, u] = pq.top();
+        pq.pop();
+        
+        if (visited[u]) continue;
+        
+        // chose this edge
+        visited[u] = true;
+        totalCost += cost;
+        edgesAdded++;
+        
+        for (const auto& [v, edgeCost] : graph[u]) {  // add adjacent nodes
+            if (!visited[v]) {
+                pq.push({edgeCost, v});
+            }
+        }
+    }
+    
+    if (edgesAdded != n) { // not all nodes connected
+        return -1;
+    }
+    
+    return totalCost;
 }
 
 string WorldNavigator::sumMinDistancesBinary(int n, vector<vector<int>>& roads) {
